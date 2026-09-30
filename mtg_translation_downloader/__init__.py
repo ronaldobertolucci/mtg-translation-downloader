@@ -1,0 +1,1 @@
+"""Portuguese Scryfall translation ETL."""
