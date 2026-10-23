@@ -19,6 +19,9 @@ python3 -m mtg_translation_downloader --dry-run --output translations.jsonl
 # Baixar, consolidar e enviar para a API existente:
 python3 -m mtg_translation_downloader --output translations.jsonl
 
+# Definir a URL completa do endpoint de ingestão pela linha de comando:
+python3 -m mtg_translation_downloader --manager-url https://manager.exemplo.com/translations --output translations.jsonl
+
 # Reutilizar um bulk local:
 python3 -m mtg_translation_downloader --input /dados/all-cards.json --output translations.jsonl
 
@@ -28,8 +31,10 @@ python3 -m mtg_translation_downloader --input /dados/all-cards.jsonl.gz --output
 
 O endpoint padrão é `http://localhost:8002/translations`, confirmado pelo OpenAPI
 do `mtg-card-manager`. O job envia um `POST` por `oracle_id`, no formato da
-especificação (campos na raiz ou `card_faces` com `face_index`). Configure a URL
-completa com `--manager-url` ou `MTG_MANAGER_URL`. A API consultada não declara
+especificação (campos na raiz ou `card_faces` com `face_index`). A URL completa pode
+ser passada na linha de comando com `--manager-url`, que tem prioridade sobre a
+variável de ambiente `MTG_MANAGER_URL`. Se nenhum dos dois for informado, será
+usado o endpoint padrão. A API consultada não declara
 autenticação; se necessário, `MTG_MANAGER_TOKEN` envia um Bearer token apenas
 ao manager. `--timeout` define o timeout de rede por operação (padrão: 120 s).
 
@@ -66,6 +71,14 @@ O job termina a leitura e materializa os payloads antes do primeiro POST. JSON
 truncado ou inválido interrompe a execução sem ingestão. Há um limite de 8 MiB
 de caracteres por objeto para evitar crescimento ilimitado do buffer. O bulk
 temporário e downloads incompletos são removidos ao terminar, inclusive em erro.
+
+**Risco de mudança de contrato do Scryfall:** alterações ou ausência de campos
+como `lang` e `set_type` podem fazer os filtros descartarem cartas silenciosamente.
+O job pode terminar com sucesso mesmo com saída vazia ou incompleta e sobrescrever
+o arquivo `--output` anterior. Como melhoria ainda não implementada, recomenda-se
+validar o esquema de entrada, comparar as contagens com a última execução válida
+e bloquear a publicação de saídas inesperadamente vazias ou com queda relevante
+de cobertura, preservando o último resultado válido.
 
 Qualquer falha de ingestão encerra o job com código 1 e informa o `oracle_id` e
 quantas entregas foram confirmadas. O arquivo `--output`, quando solicitado,
