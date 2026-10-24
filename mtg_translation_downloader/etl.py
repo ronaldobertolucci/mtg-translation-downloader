@@ -104,6 +104,8 @@ def iter_cards(source: TextIO, chunk_size=65536, max_object_size=8 * 1024 * 1024
 def eligible(card):
     return (
         card.get("lang") == "pt"
+        and isinstance(card.get("games"), list)
+        and "paper" in card["games"]
         and card.get("promo") is not True
         and card.get("textless") is not True
         and card.get("set_type") in ALLOWED_SETS

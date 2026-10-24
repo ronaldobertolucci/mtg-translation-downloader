@@ -42,6 +42,11 @@ ao manager. `--timeout` define o timeout de rede por operação (padrão: 120 s)
 
 - Aceita somente `lang=pt`, descarta `promo=true` e `textless=true`, e permite
   apenas `core`, `expansion`, `masters`, `commander`, `draft_innovation`, `starter`.
+- Exige que `games` seja uma lista contendo `"paper"`: somente impressões
+  disponíveis em papel podem fornecer traduções, inclusive flavor e textos das
+  faces. Impressões também disponíveis no Arena ou MTGO continuam elegíveis se
+  incluírem `"paper"`. Impressões exclusivamente digitais e registros com `games`
+  ausente, inválido ou sem `"paper"` são descartados antes do agrupamento.
 - Ordena as impressões por `released_at` decrescente; empates usam o `id` da
   impressão em ordem decrescente para manter o resultado determinístico.
 - Seleciona a impressão mais recente com `printed_name`, `printed_type_line` e
@@ -73,7 +78,7 @@ de caracteres por objeto para evitar crescimento ilimitado do buffer. O bulk
 temporário e downloads incompletos são removidos ao terminar, inclusive em erro.
 
 **Risco de mudança de contrato do Scryfall:** alterações ou ausência de campos
-como `lang` e `set_type` podem fazer os filtros descartarem cartas silenciosamente.
+como `lang`, `set_type` e `games` podem fazer os filtros descartarem cartas silenciosamente.
 O job pode terminar com sucesso mesmo com saída vazia ou incompleta e sobrescrever
 o arquivo `--output` anterior. Como melhoria ainda não implementada, recomenda-se
 validar o esquema de entrada, comparar as contagens com a última execução válida
@@ -106,6 +111,7 @@ volume e passe `--output /saida/translations.jsonl`.
 python3 -m unittest discover -s tests -v
 ```
 
-Testes cobrem parsing fragmentado, filtros, recência, completude da tradução, merge por face,
+Testes cobrem parsing fragmentado, filtros (incluindo disponibilidade em papel e
+exclusão de textos digitais), recência, completude da tradução, merge por face,
 download, payloads HTTP e falhas. Chamadas de rede são simuladas; os testes não
 alteram a base real do manager nem baixam o bulk completo.

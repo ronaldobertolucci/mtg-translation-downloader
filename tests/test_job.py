@@ -22,7 +22,7 @@ class JobTests(unittest.TestCase):
             "type": "all_cards", "jsonl_download_uri": "https://example.test/all.jsonl.gz",
             "download_uri": "https://example.test/legacy.json",
         }]}
-        card = {"oracle_id": "id-1", "lang": "pt", "set_type": "expansion",
+        card = {"oracle_id": "id-1", "lang": "pt", "set_type": "expansion", "games": ["paper"],
                 "released_at": "2024-01-01", "printed_name": "Ação",
                 "printed_type_line": "Feitiço", "printed_text": "Compre um card."}
         compressed = gzip.compress((json.dumps(card, ensure_ascii=False) + "\n").encode())
@@ -83,7 +83,7 @@ class JobTests(unittest.TestCase):
 
     def write_bulk(self, path):
         path.write_text(json.dumps([{
-            "oracle_id": "id-1", "lang": "pt", "set_type": "core",
+            "oracle_id": "id-1", "lang": "pt", "set_type": "core", "games": ["paper"],
             "released_at": "2024-01-01", "printed_name": "Raio",
             "printed_type_line": "Mágica Instantânea", "printed_text": "Raio causa 3 pontos de dano.",
         }]), encoding="utf-8")
@@ -132,6 +132,19 @@ class JobTests(unittest.TestCase):
             with self.assertLogs("mtg_translation_downloader.__main__", level="INFO") as logs:
                 self.assertEqual(run(args), 0)
             self.assertTrue(any("Skipped 1 oracle IDs" in line for line in logs.output))
+            request.assert_not_called()
+            self.assertEqual(args.output.read_text(), "")
+
+    def test_digital_only_impression_never_sends(self):
+        with tempfile.TemporaryDirectory() as work, patch(
+            "mtg_translation_downloader.__main__.open_request"
+        ) as request:
+            args = self.args(work)
+            self.write_bulk(args.input)
+            cards = json.loads(args.input.read_text())
+            cards[0]["games"] = ["arena"]
+            args.input.write_text(json.dumps(cards))
+            self.assertEqual(run(args), 0)
             request.assert_not_called()
             self.assertEqual(args.output.read_text(), "")
 

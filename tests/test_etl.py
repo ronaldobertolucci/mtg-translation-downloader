@@ -9,6 +9,7 @@ def card(**changes):
     return dict({
         "id": "printing-1", "oracle_id": "oracle-1", "lang": "pt", "promo": False,
         "textless": False, "set_type": "expansion", "released_at": "2024-01-01",
+        "games": ["paper"],
         "name": "Lightning Bolt", "type_line": "Instant", "oracle_text": "English rules",
         "printed_name": "Raio", "printed_type_line": "Mágica Instantânea",
         "printed_text": "Regras novas",
@@ -53,6 +54,30 @@ class MergeTests(unittest.TestCase):
         for changes in ({"lang": "en"}, {"promo": True}, {"textless": True},
                         {"set_type": "funny"}, {"set_type": "promo"}, {"set_type": None}):
             self.assertEqual(self.merge([card(**changes)]), [])
+
+    def test_requires_paper_availability(self):
+        for games in (["paper"], ["arena", "paper", "mtgo"]):
+            with self.subTest(games=games):
+                self.assertEqual(len(self.merge([card(games=games)])), 1)
+        for set_type in ALLOWED_SETS:
+            for games in ([], ["arena"], ["mtgo"], ["arena", "mtgo"],
+                          None, "paper", {"paper": True}, 42):
+                with self.subTest(set_type=set_type, games=games):
+                    self.assertEqual(self.merge([card(set_type=set_type, games=games)]), [])
+        missing = card()
+        del missing["games"]
+        self.assertEqual(self.merge([missing]), [])
+
+    def test_digital_impression_cannot_supply_translation_or_flavor(self):
+        paper = card(released_at="2020-01-01", games=["paper", "arena"])
+        digital = card(games=["arena"], printed_name="Nome digital",
+                       printed_type_line="Tipo digital", printed_text="Regras digitais",
+                       printed_flavor_text="Flavor digital", flavor_text="Outro flavor digital")
+        result = self.merge([paper, digital])[0]
+        self.assertEqual(result["name"], "Raio")
+        self.assertEqual(result["type_line"], "Mágica Instantânea")
+        self.assertEqual(result["oracle_text"], "Regras novas")
+        self.assertIsNone(result["flavor_text"])
 
     def test_latest_rules_and_historical_flavor(self):
         old = card(released_at="2020-01-01", printed_name="Nome antigo", printed_text="Antigo",
